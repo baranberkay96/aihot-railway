@@ -1,6 +1,6 @@
 # Deploy and Host AIHOT with Railway
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/aihot-2026-11-ai-hot-topics-site?referralCode=20H68q)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/aihot-202611-ai-hot-topics-site-with-dai?referralCode=20H68q)
 
 AIHOT is an open-source news site that runs itself. It collects items from your sources, lets a language model screen and score each one twice, writes a headline and summary, groups reports of the same story into one event, ranks events by how many sources discuss them, and publishes a daily report.
 
