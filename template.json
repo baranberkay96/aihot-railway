@@ -1,0 +1,395 @@
+{
+ "name": "AIHOT 2026.11 AI Hot Topics Site with Daily Reports",
+ "description": "Self-hosted AI news site: LLM-scored picks, trending events, daily reports",
+ "category": "AI/ML",
+ "tags": [
+  "aihot",
+  "ai-news",
+  "news-aggregator",
+  "hot-topics",
+  "daily-digest",
+  "llm",
+  "rss",
+  "mcp",
+  "self-hosted"
+ ],
+ "image": "https://cdn.jsdelivr.net/npm/lucide-static@1.59.0/icons/flame.svg",
+ "upstream": {
+  "repo": "KKKKhazix/AIHOT",
+  "version": "no releases; snapshot 2026.11 = main at 0ce2d00fd80be416d78d675df732d5e1bef53b40 (committed 2026-11-07T10:41:07Z)",
+  "source": "https://codeload.github.com/KKKKhazix/AIHOT/tar.gz/0ce2d00fd80be416d78d675df732d5e1bef53b40, sha256 11432e325631db783808382d3973c926d6906ed38c2863024cd0d8ae23f08faf",
+  "license": "MIT (the AIHOT name and logo are not licensed)",
+  "images": {
+   "app": "built from node:24.22.2-trixie-slim@sha256:0820eaa85e07d0490446dd01d14707e17e6108a36988cf374899cd057eb3812d (Node 24.22.2, 2026-11-05) + Debian postgresql-client 17",
+   "gateway": "caddy:2.11.9-alpine@sha256:0bbb055bda6793c999bde78b1b5ce3e89f829fb031af2cf50056ea1246559fee (Caddy 2.11.9, 2026-11-05)",
+   "postgres": "ghcr.io/railwayapp-templates/postgres-ssl:17 (index sha256:5e806d28c18198f933d25e79989470a47a938f465bf0634e030b416961b3463e, PostgreSQL 17.11, image built 2026-10-23)"
+  },
+  "checked": "2026-11-07"
+ },
+ "services": {
+  "Gateway": {
+   "icon": "https://cdn.jsdelivr.net/npm/lucide-static@1.59.0/icons/flame.svg",
+   "source": {
+    "repo": "baranberkay96/aihot-railway",
+    "rootDirectory": "/services/gateway"
+   },
+   "startCommand": null,
+   "preDeployCommand": null,
+   "healthcheckPath": "/gateway-health",
+   "healthcheckTimeout": 120,
+   "restartPolicyType": "ON_FAILURE",
+   "restartPolicyMaxRetries": 10,
+   "numReplicas": 1,
+   "cronSchedule": null,
+   "publicDomain": true,
+   "targetPort": 8080,
+   "tcpProxy": null,
+   "volume": null,
+   "variables": {
+    "PORT": {
+     "defaultValue": "8080",
+     "description": "Port Caddy listens on; the public domain and Railway's healthcheck (/gateway-health) use it.",
+     "required": false
+    },
+    "AIHOT_WEB_UPSTREAM": {
+     "defaultValue": "${{Web.RAILWAY_PRIVATE_DOMAIN}}:${{Web.PORT}}",
+     "description": "Private host:port of the Web service that Caddy forwards every request to.",
+     "required": false
+    }
+   }
+  },
+  "Web": {
+   "icon": "https://cdn.jsdelivr.net/npm/lucide-static@1.59.0/icons/newspaper.svg",
+   "source": {
+    "repo": "baranberkay96/aihot-railway",
+    "rootDirectory": "/services/aihot"
+   },
+   "startCommand": "/app/railway/entrypoint.sh web",
+   "preDeployCommand": null,
+   "healthcheckPath": "/terms",
+   "healthcheckTimeout": 300,
+   "restartPolicyType": "ALWAYS",
+   "numReplicas": 1,
+   "cronSchedule": null,
+   "publicDomain": false,
+   "targetPort": null,
+   "tcpProxy": null,
+   "volume": null,
+   "variables": {
+    "PORT": {
+     "defaultValue": "3000",
+     "description": "Port of the web server (dual-stack ::); Railway's healthcheck uses it at /terms, a page that renders without the API.",
+     "required": false
+    },
+    "API_BASE_URL": {
+     "defaultValue": "http://${{Backend.RAILWAY_PRIVATE_DOMAIN}}:${{Backend.PORT}}",
+     "description": "Backend API over the private network: page data (SSR) and every API-owned path (/api/*, RSS, sitemap, images, MCP) is proxied there.",
+     "required": false
+    },
+    "SITE_URL": {
+     "defaultValue": "https://${{Gateway.RAILWAY_PUBLIC_DOMAIN}}",
+     "description": "Address readers use. Links, RSS, sitemap, share images and MCP host checks use it; set https://{your-domain} after adding a custom domain (Backend follows).",
+     "required": false
+    },
+    "TRUST_PROXY": {
+     "defaultValue": "true",
+     "description": "Read the visitor address from X-Forwarded-For (set by the Gateway) so sign-in and feedback limits count real visitors. Keep true: Web has no public domain.",
+     "required": false
+    },
+    "AIHOT_SOURCE_REPO": {
+     "defaultValue": "${{Backend.AIHOT_SOURCE_REPO}}",
+     "description": "Build source, from Backend (both services must run the same code).",
+     "required": false
+    },
+    "AIHOT_SOURCE_COMMIT": {
+     "defaultValue": "${{Backend.AIHOT_SOURCE_COMMIT}}",
+     "description": "Build source commit, from Backend.",
+     "required": false
+    },
+    "AIHOT_SOURCE_SHA256": {
+     "defaultValue": "${{Backend.AIHOT_SOURCE_SHA256}}",
+     "description": "Build source checksum, from Backend.",
+     "required": false
+    }
+   }
+  },
+  "Backend": {
+   "icon": "https://cdn.jsdelivr.net/npm/lucide-static@1.59.0/icons/server-cog.svg",
+   "source": {
+    "repo": "baranberkay96/aihot-railway",
+    "rootDirectory": "/services/aihot"
+   },
+   "startCommand": "/app/railway/entrypoint.sh backend",
+   "preDeployCommand": "/app/railway/entrypoint.sh predeploy",
+   "preDeployTimeoutSeconds": 900,
+   "healthcheckPath": "/api/health",
+   "healthcheckTimeout": 600,
+   "restartPolicyType": "ALWAYS",
+   "numReplicas": 1,
+   "cronSchedule": null,
+   "publicDomain": false,
+   "targetPort": null,
+   "tcpProxy": null,
+   "volume": {
+    "mountPath": "/data"
+   },
+   "variables": {
+    "PORT": {
+     "defaultValue": "3001",
+     "description": "API port (dual-stack ::). Railway's healthcheck calls /api/health here, which also checks the database.",
+     "required": false
+    },
+    "LLM_API_KEY": {
+     "defaultValue": "",
+     "description": "Required for selection and write-ups: API key of any OpenAI-compatible model service (DeepSeek by default). The site boots without it, but items wait unscored until it is set. Billed by that provider.",
+     "required": true
+    },
+    "LLM_BASE_URL": {
+     "defaultValue": "https://api.deepseek.com/v1",
+     "description": "OpenAI-compatible base URL of the model service, e.g. https://api.openai.com/v1 or https://openrouter.ai/api/v1.",
+     "required": false
+    },
+    "LLM_MODEL": {
+     "defaultValue": "deepseek-flash",
+     "description": "Model every step uses unless changed per step in the admin (Models page) or with PREFILTER_MODEL, SCORE_MODEL, ...",
+     "required": false
+    },
+    "LLM_EXTRA_JSON": {
+     "defaultValue": "{\"thinking\":{\"type\":\"disabled\"}}",
+     "description": "Provider-specific request fields as JSON. The default turns DeepSeek's thinking off; clear it for providers that reject unknown fields (OpenAI).",
+     "required": false
+    },
+    "LLM_REASONING_TOKENS": {
+     "defaultValue": "",
+     "description": "Only for reasoning models: extra output tokens per call for the reasoning, e.g. 4000 (set it when calls fail with finish_reason=length).",
+     "required": false
+    },
+    "LLM_VISION": {
+     "defaultValue": "false",
+     "description": "true if the model accepts images (selected items then also use their first image).",
+     "required": false
+    },
+    "EMBEDDING_BASE_URL": {
+     "defaultValue": "",
+     "description": "Optional OpenAI-compatible /embeddings service (e.g. https://api.openai.com/v1) for better event grouping and heat; empty = text-overlap matching.",
+     "required": false
+    },
+    "EMBEDDING_API_KEY": {
+     "defaultValue": "",
+     "description": "Key for EMBEDDING_BASE_URL.",
+     "required": false
+    },
+    "EMBEDDING_MODEL": {
+     "defaultValue": "",
+     "description": "Embedding model, e.g. text-embedding-3-small.",
+     "required": false
+    },
+    "COLLECT_ENABLED": {
+     "defaultValue": "true",
+     "description": "Safety valve: only 'true' fetches sources (and their icons). Set false to pause collection.",
+     "required": false
+    },
+    "MODEL_CALLS_ENABLED": {
+     "defaultValue": "true",
+     "description": "Safety valve: only 'true' calls models. Set false to stop all model spending.",
+     "required": false
+    },
+    "ADMIN_PASSWORD": {
+     "defaultValue": "${{secret(32, \"abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789\")}}",
+     "description": "Password for /admin, generated at deploy (at least 12 characters). Changing it signs out existing admin sessions.",
+     "required": false
+    },
+    "SESSION_SECRET": {
+     "defaultValue": "${{secret(64, \"abcdef0123456789\")}}",
+     "description": "Signs admin sessions; generated. Rotating it signs everyone out.",
+     "required": false
+    },
+    "IMG_PROXY_SIGN_SECRET": {
+     "defaultValue": "${{secret(64, \"abcdef0123456789\")}}",
+     "description": "Signs image-proxy URLs so the proxy only fetches images the site itself links; generated.",
+     "required": false
+    },
+    "DATABASE_URL": {
+     "defaultValue": "${{Postgres.DATABASE_URL}}",
+     "description": "PostgreSQL over the private network.",
+     "required": false
+    },
+    "SITE_URL": {
+     "defaultValue": "${{Web.SITE_URL}}",
+     "description": "Same public address as Web (change it there).",
+     "required": false
+    },
+    "INGEST_TOKEN": {
+     "defaultValue": "",
+     "description": "Optional token (16+ characters) that turns on POST /api/ingest/items for your own scripts to push items; empty keeps the endpoint off.",
+     "required": false
+    },
+    "INGEST_RATE_LIMIT": {
+     "defaultValue": "10",
+     "description": "Pushes per client and minute on /api/ingest/items (upstream compose default); 0 turns the limit off.",
+     "required": false
+    },
+    "SOCIALDATA_API_KEY": {
+     "defaultValue": "",
+     "description": "Optional, paid per request: SocialData key for X (Twitter) account sources. Budget limits are in the admin settings.",
+     "required": false
+    },
+    "JINA_API_KEY": {
+     "defaultValue": "",
+     "description": "Optional, paid per request: Jina Reader key, a browser-rendered fallback when a page's full text cannot be fetched.",
+     "required": false
+    },
+    "GITHUB_TOKEN": {
+     "defaultValue": "",
+     "description": "Optional read-only GitHub token for JSON sources on api.github.com (higher rate limit).",
+     "required": false
+    },
+    "DB_BACKUP_STORE_SECRET_ID": {
+     "defaultValue": "${{Backups.ACCESS_KEY_ID}}",
+     "description": "Bucket access key for the daily backup (pg_dump + uploads, 04:10 China time).",
+     "required": false
+    },
+    "DB_BACKUP_STORE_SECRET_KEY": {
+     "defaultValue": "${{Backups.SECRET_ACCESS_KEY}}",
+     "description": "Bucket secret key for the daily backup.",
+     "required": false
+    },
+    "DB_BACKUP_STORE_BUCKET": {
+     "defaultValue": "${{Backups.BUCKET}}",
+     "description": "Bucket the backups go to (daily/, weekly/, monthly/ prefixes).",
+     "required": false
+    },
+    "DB_BACKUP_STORE_REGION": {
+     "defaultValue": "${{Backups.REGION}}",
+     "description": "Bucket region for request signing.",
+     "required": false
+    },
+    "TEMPLATE_BACKUP_ENDPOINT": {
+     "defaultValue": "${{Backups.ENDPOINT}}",
+     "description": "Bucket endpoint; the template derives DB_BACKUP_STORE_DOMAIN ({bucket}.{endpoint host}, virtual-hosted style) from it.",
+     "required": false
+    },
+    "TEMPLATE_BACKUPS": {
+     "defaultValue": "true",
+     "description": "false turns the daily backup to the Bucket off.",
+     "required": false
+    },
+    "TEMPLATE_BACKUP_ON_BOOT": {
+     "defaultValue": "false",
+     "description": "true runs one backup right after each start (to test the Bucket wiring or before an upgrade); set it back to false afterwards.",
+     "required": false
+    },
+    "TEMPLATE_SEED_SOURCES": {
+     "defaultValue": "true",
+     "description": "Each deploy adds the sources of industry/sources.json that are missing (18 AI news feeds upstream). Pause unwanted sources in the admin instead of deleting them, or set false.",
+     "required": false
+    },
+    "AIHOT_SOURCE_REPO": {
+     "defaultValue": "",
+     "description": "Build your own fork: owner/name of a public GitHub repo made from AIHOT. Empty = KKKKhazix/AIHOT. Web uses the same value.",
+     "required": false
+    },
+    "AIHOT_SOURCE_COMMIT": {
+     "defaultValue": "",
+     "description": "Full 40-character commit SHA to build. Empty = the pinned snapshot 0ce2d00fd80b (2026-11-07).",
+     "required": false
+    },
+    "AIHOT_SOURCE_SHA256": {
+     "defaultValue": "",
+     "description": "SHA-256 of the commit's codeload tarball; verified when set (the pinned snapshot is always verified). The build log prints it.",
+     "required": false
+    },
+    "RAILWAY_DEPLOYMENT_DRAINING_SECONDS": {
+     "defaultValue": "300",
+     "description": "Seconds a redeploy waits for the worker to finish in-flight model calls and backups before stopping it (upstream allows up to 470).",
+     "required": false
+    }
+   }
+  },
+  "Postgres": {
+   "icon": "https://devicons.railway.app/i/postgresql.svg",
+   "source": {
+    "image": "ghcr.io/railwayapp-templates/postgres-ssl:17"
+   },
+   "startCommand": null,
+   "preDeployCommand": null,
+   "healthcheckPath": null,
+   "healthcheckTimeout": null,
+   "restartPolicyType": "ON_FAILURE",
+   "restartPolicyMaxRetries": 10,
+   "numReplicas": 1,
+   "cronSchedule": null,
+   "publicDomain": false,
+   "targetPort": null,
+   "tcpProxy": null,
+   "volume": {
+    "mountPath": "/var/lib/postgresql/data"
+   },
+   "variables": {
+    "PGDATA": {
+     "defaultValue": "/var/lib/postgresql/data/pgdata",
+     "description": "Location where the database will be initialized",
+     "required": true
+    },
+    "PGHOST": {
+     "defaultValue": "${{RAILWAY_PRIVATE_DOMAIN}}",
+     "description": "Railway Private Domain Name.",
+     "required": true
+    },
+    "PGPORT": {
+     "defaultValue": "5432",
+     "description": "Port to connect to Postgres.",
+     "required": true
+    },
+    "PGUSER": {
+     "defaultValue": "${{ POSTGRES_USER }}",
+     "description": "Required variable for Data panel",
+     "required": true
+    },
+    "PGDATABASE": {
+     "defaultValue": "${{POSTGRES_DB}}",
+     "description": "Required variable for the data panel.",
+     "required": true
+    },
+    "PGPASSWORD": {
+     "defaultValue": "${{POSTGRES_PASSWORD}}",
+     "description": "Required variable for Data panel",
+     "required": true
+    },
+    "POSTGRES_DB": {
+     "defaultValue": "railway",
+     "description": "Database created on first boot; AIHOT's migrations create its tables (and pg_trgm) here.",
+     "required": true
+    },
+    "DATABASE_URL": {
+     "defaultValue": "postgresql://${{PGUSER}}:${{POSTGRES_PASSWORD}}@${{RAILWAY_PRIVATE_DOMAIN}}:5432/${{PGDATABASE}}",
+     "description": "Private connection string; Backend references it.",
+     "required": true
+    },
+    "POSTGRES_USER": {
+     "defaultValue": "postgres",
+     "description": "User to connect to Postgres DB",
+     "required": true
+    },
+    "SSL_CERT_DAYS": {
+     "defaultValue": "820",
+     "description": "SSL certificate expiry in days.",
+     "required": false
+    },
+    "POSTGRES_PASSWORD": {
+     "defaultValue": "${{ secret(32, \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\") }}",
+     "description": "Superuser password, generated at deploy (letters only, so it is safe inside DATABASE_URL). Changing it later needs ALTER USER too.",
+     "required": true
+    },
+    "RAILWAY_DEPLOYMENT_DRAINING_SECONDS": {
+     "defaultValue": "60",
+     "description": "Allow Postgres to cleanly shut down",
+     "required": true
+    }
+   }
+  }
+ },
+ "buckets": [
+  "Backups"
+ ]
+}

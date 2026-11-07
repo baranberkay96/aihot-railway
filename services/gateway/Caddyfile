@@ -1,0 +1,44 @@
+# AIHOT gateway for Railway (community template): the only public service.
+#
+# Plays the role of the Caddy service in upstream's `docker compose --profile https` setup
+# (deploy/Caddyfile): response compression and the same security headers. Railway's edge already
+# terminates TLS, so Caddy only listens on plain HTTP inside the project.
+#
+#   /gateway-health  -> 200 from Caddy itself (Railway healthcheck)
+#   everything else  -> the Web service, which renders the pages and passes API paths (/api/*, RSS,
+#                       sitemap, images, MCP) on to the Backend. The site is public by design; the
+#                       admin (/admin) and its API require the generated ADMIN_PASSWORD.
+{
+	admin off
+	auto_https off
+	servers {
+		# Railway's edge reaches the service from private address space. Trust its X-Forwarded-For,
+		# read right to left, so AIHOT's per-visitor limits (sign-in attempts, feedback) see real clients.
+		trusted_proxies static private_ranges 100.64.0.0/10
+		trusted_proxies_strict
+		client_ip_headers X-Forwarded-For
+	}
+}
+
+:{$PORT:8080} {
+	handle /gateway-health {
+		respond "ok" 200
+	}
+
+	handle {
+		encode zstd gzip
+		header {
+			?Strict-Transport-Security "max-age=31536000"
+			?X-Frame-Options "SAMEORIGIN"
+			?X-Content-Type-Options "nosniff"
+			?Referrer-Policy "strict-origin-when-cross-origin"
+			?Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		}
+		reverse_proxy {$AIHOT_WEB_UPSTREAM} {
+			# One trustworthy visitor address: Web (TRUST_PROXY=true) reads the last X-Forwarded-For entry.
+			header_up X-Forwarded-For {client_ip}
+			# Ride out a Web restart or redeploy instead of answering 502 at once.
+			lb_try_duration 15s
+		}
+	}
+}
