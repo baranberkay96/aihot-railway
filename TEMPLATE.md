@@ -1,10 +1,10 @@
-# AIHOT 2026.11 AI Hot Topics Site with Daily Reports — Railway template spec
+# AIHOT AI Hot Topics Site with Daily Reports — Railway template spec
 
 ## Listing
 
 | Field | Value |
 |---|---|
-| Name | **AIHOT 2026.11 AI Hot Topics Site with Daily Reports** (`2026.11` = the pinned upstream snapshot; AIHOT has no releases or tags) |
+| Name | **AIHOT AI Hot Topics Site with Daily Reports** (`2026.11` = the pinned upstream snapshot; AIHOT has no releases or tags) |
 | Description | Self-hosted AI news site: LLM-scored picks, trending events, daily reports (74 chars) |
 | Category | AI/ML |
 | Tags | aihot, ai-news, news-aggregator, hot-topics, daily-digest, llm, rss, mcp, self-hosted |
